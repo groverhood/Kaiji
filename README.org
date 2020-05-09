@@ -1,0 +1,57 @@
+* Kaiji - The Fakix Bootloader
+
+** Introduction
+   Kaiji (or 开机/開機) is a bootloader designed to be entirely architecture agnostic
+   through its design as an UEFI Application. All it does is set up an Ethernet
+   connection, send a magic number to the other end, and receive a minimal boot
+   info structure that contains the Fakix ramdisk. From there, it searches for a
+   /sbin/cpu_driver* executable to launch using ELF64 format.
+
+** How to build
+   Kaiji was established a separate repo so that it's obvious that it is supposed to
+   be ran in the EDK II environment. Normally when I set Kaiji, I go ahead and create
+   a symlink as such:
+
+   #+BEGIN_SRC shell-script
+     ln -s /path/to/Kaiji /path/to/edk2/MdeModulePkg/Application/Kaiji
+   #+END_SRC
+
+   The rest of these instructions will contains paths relative to /path/to/edk2.
+
+   After creating your symlink to your Kaiji repo, it is important to add Kaiji as a
+   component in MdeModulePkg/MdeModulePkg.dsc under the [Components region]. The 
+   following line will accomplish this:
+
+   #+BEGIN_SRC text
+     [Components]
+       MdeModulePkg/Application/HelloWorld/HelloWorld.inf
+       MdeModulePkg/Application/Kaiji/Kaiji.inf <--
+       MdeModulePkg/Application/MemoryProfileInfo/MemoryProfileInfo.inf
+   #+END_SRC
+
+   Additionally, edit your Conf/target.txt to look like this:
+
+   #+BEGIN_SRC text
+     ACTIVE_PLATFORM       = MdeModulePkg/MdeModulePkg.dsc
+     TARGET                = RELEASE
+     TARGET_ARCH           = X64 AArch64
+     TOOL_CHAIN_TAG        = GCC5
+     BUILD_RULE_CONF       = Conf/build_rule.txt
+   #+END_SRC
+
+   After this, cd to your edk2 directory, and run the following lines:
+
+   #+BEGIN_SRC shell-script
+     # Run this if it's your first time building
+     make -C BaseTools
+
+     export GCC5_AARCH64_PREFIX=aarch64-linux-gnu-
+     . edksetup.h
+
+     # Do this if you've made changes
+     rm -rf Build
+
+     build -a<X64 or AARCH64>
+   #+END_SRC
+
+   Now, you should have an PEI executable titled Build/MdeModule/RELEASE_GCC5/<arch>/Kaiji.efi.

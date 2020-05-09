@@ -1,0 +1,18 @@
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME = Kaiji
+  FILE_GUID = b63334e4-de20-4a86-8c31-2e4f5883a1c9
+  MODULE_TYPE = UEFI_APPLICATION
+  VERSION_STRING = 1.0
+  ENTRY_POINT = efi_main
+
+[Sources]
+  boot/main.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
