@@ -7,6 +7,8 @@
   ENTRY_POINT = efi_main
 
 [Sources]
+  include/ramdisk.h
+  include/bootstruct.h
   src/main.c
   src/ramdisk.c
 
@@ -15,5 +17,16 @@
   MdeModulePkg/MdeModulePkg.dec
 
 [LibraryClasses]
+  BaseLib
   UefiApplicationEntryPoint
   UefiLib
+  UefiBootServicesTableLib
+  UefiBootManagerLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  NetLib
+  DpcLib
+  DevicePathLib
+  PcdLib
+  
