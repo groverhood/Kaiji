@@ -3,7 +3,7 @@
 
 #include <Uefi.h>
 
-#define KAIJIMAG *(UINT64 *)({ 'K', 'a', 'i', 'j', 'i', 'E', 'F', 'I' })
+#define KAIJIMAG *(UINT64 *)((CHAR8[8]){ 'K', 'a', 'i', 'j', 'i', 'E', 'F', 'I' })
 
 /* Small architecture-agnostic structure used to transfer the Fakix ramdisk
    from the host to the Fakix machine. */

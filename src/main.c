@@ -66,7 +66,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
     }
     
     status = services->OpenProtocol(nethandle, &netguid, (void **)&netp,
-				    image, NULL, BY_HANDLE_PROTOCOL);
+				    image, NULL, EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
     if (status != EFI_SUCCESS) {
 	return status;
     }
@@ -76,7 +76,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
     
     struct bootinfo *bootinfo;
     status = services->AllocatePages(AllocateAddress, EfiLoaderData,
-				     BOOTINFO_NPAGES, &bootinfo_phys);
+				     BOOTINFO_NPAGES, (EFI_PHYSICAL_ADDRESS *)&bootinfo);
     if (status != EFI_SUCCESS) {
 	return status;
     }
