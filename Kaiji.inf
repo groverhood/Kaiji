@@ -9,12 +9,18 @@
 [Sources]
   include/ramdisk.h
   include/bootstruct.h
+  include/elf.h
   src/main.c
   src/ramdisk.c
 
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
+  NetworkPkg/NetworkPkg.dec
+
+[Protocols]
+  gEfiSimpleNetworkProtocolGuid	## CONSUMES
+  gEfiSimpleFileSystemProtocolGuid ## CONSUMES
 
 [LibraryClasses]
   BaseLib
@@ -25,8 +31,6 @@
   BaseMemoryLib
   MemoryAllocationLib
   DebugLib
-  NetLib
-  DpcLib
   DevicePathLib
   PcdLib
-  
+

@@ -1,0 +1,2 @@
+* Write arch-specific code for initializing the upper-half kernel model.
+  *Make sure it generates the virtual address space according to the EFI Memory Map*

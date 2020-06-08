@@ -10,7 +10,9 @@
 struct bootstruct {
     UINT64 magic;
     UINT64 ramdisk_size;
-    UINT8 ramdisk[0]; /* From hereon lies the Fakix ramdisk. */
+    UINT8 *ramdisk;
+    UINT64 memmap_size;
+    EFI_MEMORY_DESCRIPTOR memmap[0];
 };
 
 #endif
