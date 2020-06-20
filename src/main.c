@@ -52,23 +52,21 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
     struct bootstruct *bootinfo;
     status = get_ramdisk_snp(image, services, &key, &bootinfo);
     if (status != EFI_SUCCESS) {
-	cout->OutputString(cout, u"Couldn't find SNP driver, searching for ramdisk in boot partition\n\r");
-	status = get_ramdisk_file(image, services, &key, &bootinfo);
-	if (status != EFI_SUCCESS) {
-	    cout->OutputString(cout, u"Couldn't find SFS driver, returning with failing exit code\n\r");
-	    return status;
-	}
+        cout->OutputString(cout, u"Couldn't find SNP driver, searching for ramdisk in boot partition\n\r");
+        status = get_ramdisk_file(image, services, &key, &bootinfo);
+        if (status != EFI_SUCCESS) {
+            cout->OutputString(cout, u"Couldn't find SFS driver, returning with failing exit code\n\r");
+            return status;
+        }
     }
         
     UINT8 *cpu_driver = ramdisk_find(bootinfo->ramdisk, "sbin/cpu_driver");
     if (cpu_driver == NULL) {
-	return EFI_LOAD_ERROR;
+        return EFI_LOAD_ERROR;
     }
 
     bootinfo->magic = KAIJIMAG;
-        
-    services->ExitBootServices(image, key);
-    return ramdisk_exec(cpu_driver, bootinfo);
+    return ramdisk_exec(cpu_driver, services, key, bootinfo);
 }
 
 static EFI_STATUS get_memory_map(EFI_HANDLE image, EFI_BOOT_SERVICES *services, UINTN *mapkey, struct bootstruct **bootinfo)
@@ -79,18 +77,18 @@ static EFI_STATUS get_memory_map(EFI_HANDLE image, EFI_BOOT_SERVICES *services, 
     bootinfo_size = DIVIDE_ROUND_UP(memmap_size + sizeof **bootinfo, 4 * K) * (4 * K);
 
     status = services->AllocatePages(AllocateAnyPages, EfiLoaderData, bootinfo_size / (4 * K),
-				     (EFI_PHYSICAL_ADDRESS *)bootinfo);
+                                     (EFI_PHYSICAL_ADDRESS *)bootinfo);
     if (status != EFI_SUCCESS) {
-	cout->OutputString(cout, u"Failed to allocate bootinfo struct\n\r");
-	return status;
+        cout->OutputString(cout, u"Failed to allocate bootinfo struct\n\r");
+        return status;
     }
 
     (*bootinfo)->memmap_size = memmap_size;
     status = services->GetMemoryMap(&(*bootinfo)->memmap_size, (*bootinfo)->memmap,
-				    mapkey, NULL, NULL);
+                                    mapkey, NULL, NULL);
     if (status) {
-	cout->OutputString(cout, u"Failed to get EFI memory map\n\r");
-	return status;
+        cout->OutputString(cout, u"Failed to get EFI memory map\n\r");
+        return status;
     }
     
     return status;
@@ -103,72 +101,72 @@ static EFI_STATUS get_ramdisk_file(EFI_HANDLE image, EFI_BOOT_SERVICES *services
     EFI_GUID getinfoid = EFI_FILE_INFO_ID;
     EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *sfs;
     union {
-	EFI_FILE_INFO rdinfo;
-	UINT8 raw[sizeof(EFI_FILE_INFO) + sizeof u"\\fakixrd"];
+        EFI_FILE_INFO rdinfo;
+        UINT8 raw[sizeof(EFI_FILE_INFO) + sizeof u"\\fakixrd"];
     } un;
     UINTN rdinfo_size = sizeof un.rdinfo + sizeof u"\\fakixrd";
     EFI_FILE_PROTOCOL *rootdir = NULL;
     EFI_FILE_PROTOCOL *ramdisk = NULL;
-    
+
     status = services->LocateProtocol(&fileguid, NULL, (VOID **)&sfs);
     if (status != EFI_SUCCESS) {
-	cout->OutputString(cout, u"LocateProtocol() failed\n\r");
-	return status;
+        cout->OutputString(cout, u"LocateProtocol() failed\n\r");
+        return status;
     }
 
     status = sfs->OpenVolume(sfs, &rootdir);
     if (status != EFI_SUCCESS) {
-	cout->OutputString(cout, u"OpenVolume() failed\n\r");
+        cout->OutputString(cout, u"OpenVolume() failed\n\r");
     }
 
     status = rootdir->Open(rootdir, &ramdisk, u"\\fakixrd", EFI_FILE_MODE_READ, 0);
     if (status != EFI_SUCCESS) {
-	cout->OutputString(cout, u"Failed to open ramdisk\n\r");
-	rootdir->Close(rootdir);
-	return status;
+        cout->OutputString(cout, u"Failed to open ramdisk\n\r");
+        rootdir->Close(rootdir);
+        return status;
     }
 
     status = ramdisk->GetInfo(ramdisk, &getinfoid, &rdinfo_size, &un.rdinfo);
     if (status != EFI_SUCCESS) {
-	cout->OutputString(cout, u"Failed to stat ramdisk\n\r");
-	if (status == EFI_BUFFER_TOO_SMALL) {
-	    cout->OutputString(cout, u"Buffer too small\n\r");
-	}
-	goto cleanup;
+        cout->OutputString(cout, u"Failed to stat ramdisk\n\r");
+        if (status == EFI_BUFFER_TOO_SMALL) {
+            cout->OutputString(cout, u"Buffer too small\n\r");
+        }
+        goto cleanup;
     }
 
     UINT8 *ramdisk_buffer;
     UINT64 filesize = un.rdinfo.FileSize;
     UINT64 ramdisk_size = DIVIDE_ROUND_UP(filesize, 4 * K) * (4 * K);
     status = services->AllocatePages(AllocateAnyPages, EfiLoaderData, ramdisk_size / (4 * K),
-				     (EFI_PHYSICAL_ADDRESS *)&ramdisk_buffer);
+                                     (EFI_PHYSICAL_ADDRESS *)&ramdisk_buffer);
     if (status != EFI_SUCCESS) {
-	cout->OutputString(cout, u"Failed to allocate ramdisk memory\n\r");
-	goto cleanup;
+        cout->OutputString(cout, u"Failed to allocate ramdisk memory\n\r");
+        goto cleanup;
     }
 
     status = ramdisk->Read(ramdisk, &ramdisk_size, (VOID *)ramdisk_buffer);
     if (status != EFI_SUCCESS) {
-	cout->OutputString(cout, u"Failed to read ramdisk into memory\n\r");
-	goto cleanup;
+        cout->OutputString(cout, u"Failed to read ramdisk into memory\n\r");
+        goto cleanup;
     }
 
     status = get_memory_map(image, services, mapkey, bootinfo);
     if (status != EFI_SUCCESS) {
-	cout->OutputString(cout, u"Failed to get memory map\n\r");
-	goto cleanup;
+        cout->OutputString(cout, u"Failed to get memory map\n\r");
+        goto cleanup;
     }
 
     (*bootinfo)->ramdisk = ramdisk_buffer;
     (*bootinfo)->ramdisk_size = ramdisk_size;
 
- cleanup:
+cleanup:
     cout->OutputString(cout, u"\n\rCleaning up streams\n\r");
     if (ramdisk != NULL) {
-	ramdisk->Close(ramdisk);
+        ramdisk->Close(ramdisk);
     }
     if (rootdir != NULL) {
-	rootdir->Close(rootdir);
+        rootdir->Close(rootdir);
     }
     return status;
 }

@@ -12,6 +12,7 @@
   include/elf.h
   src/main.c
   src/ramdisk.c
+  src/upper_half.c
 
 [Packages]
   MdePkg/MdePkg.dec

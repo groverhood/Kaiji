@@ -23,23 +23,22 @@ struct posix_header {           /* byte offset */
 
 static int strcmp(const char *s1, const char *s2)
 {
-    int cval;
+  int cval;
     while ((cval = *s1 - *s2) == 0 && *s1 != 0 && *s2 != 0) {
-	s1++;
-	s2++;
+      s1++;
+      s2++;
     }
     return cval;
 }
 
-typedef void start_func(struct bootstruct *bootinfo);
+extern void boot_upper_half(EFI_BOOT_SERVICES *services, Elf64_Ehdr *kernhdr, UINTN mapkey, struct bootstruct *bootinfo);
 
-EFI_STATUS ramdisk_exec(UINT8* rdent, struct bootstruct *bootinfo)
+EFI_STATUS ramdisk_exec(UINT8* rdent, EFI_BOOT_SERVICES *services, UINTN mapkey, struct bootstruct *bootinfo)
 {
     struct posix_header *hdr = (struct posix_header *)rdent;
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *)(hdr + 1);
 
-    start_func *start = (start_func *)ehdr->e_entry;
-    start(bootinfo);
+    boot_upper_half(services, ehdr, mapkey, bootinfo);
     
     return !EFI_SUCCESS;
 }
@@ -47,7 +46,7 @@ EFI_STATUS ramdisk_exec(UINT8* rdent, struct bootstruct *bootinfo)
 UINT8 *ramdisk_find(UINT8 *rd, CHAR8 *ent)
 {
     while (strcmp((char *)rd, ent) != 0) {
-	rd++;
+      rd++;
     }
     return rd;
 }

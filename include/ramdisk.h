@@ -18,6 +18,6 @@
 UINT8 *ramdisk_find(UINT8 *rd, CHAR8 *ent);
 
 /* Execute a ramdisk entry. Should not return if successful. */
-EFI_STATUS ramdisk_exec(UINT8 *rdent, struct bootstruct *bootinfo);
+EFI_STATUS ramdisk_exec(UINT8 *rdent, EFI_BOOT_SERVICES *services, UINTN mapkey, struct bootstruct *bootinfo);
 
 #endif

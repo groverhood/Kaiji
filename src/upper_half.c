@@ -117,6 +117,8 @@ static void load_kernel_page_table(EFI_BOOT_SERVICES *services, UINTN mem)
     for (paddr = 0; paddr < 16 * G; paddr += G, ++l1ent) {
         l1ent->un_output.outputaddr = (paddr >> 12);
     }
+
+
 }
 
 #elif defined(__amd64__)
