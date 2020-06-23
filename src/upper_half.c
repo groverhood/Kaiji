@@ -2,11 +2,9 @@
 #include <elf.h>
 
 #ifdef __aarch64__
-#include <AArch64/ProcessorBind.h>
 #define funcall(fun, arg) asm volatile ("mov x0, %1\n\t"    \
                                         "blr %0" :: "r" (fun), "r" (arg))
 #elif defined(__amd64__)
-#include <X64/ProcessorBind.h>
 #define funcall(fun, arg) asm volatile ("call %0" :: "r" (fun), "D" (arg))
 #endif
 
