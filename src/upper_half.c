@@ -39,5 +39,11 @@ void boot_upper_half(EFI_BOOT_SERVICES *services, EFI_RUNTIME_SERVICES *vmapper,
 
 static void init_upper_half_mapping(EFI_MEMORY_DESCRIPTOR *mmap, UINTN mmap_size)
 {
-
+    UINTN nents = (mmap_size / sizeof *mmap);
+    UINTN i;
+    for (i = 0; i < nents; ++i) {
+        if ((mmap[i].Type & EFI_MEMORY_RUNTIME) != 0) {
+            mmap[i].VirtualStart = mmap[i].PhysicalStart + UPPER_HALF_BASE;
+        }
+    }
 }
