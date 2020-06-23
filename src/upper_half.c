@@ -31,7 +31,8 @@ void boot_upper_half(EFI_BOOT_SERVICES *services, EFI_RUNTIME_SERVICES *vmapper,
 
     services->ExitBootServices(services, mapkey);
     init_upper_half_mapping(bootinfo->memmap, bootinfo->memmap_size);
-    vmapper->SetVirtualAddressMap(bootinfo->memmap_size, sizeof *bootinfo->memmap, );
+    vmapper->SetVirtualAddressMap(bootinfo->memmap_size, sizeof *bootinfo->memmap, EFI_MEMORY_DESCRIPTOR_VERSION,
+                                  bootinfo->memmap);
 
     start_fn local_start = (start_fn)(pkernhdr + kernhdr->e_entry); 
     funcall(local_start, bootinfo);
