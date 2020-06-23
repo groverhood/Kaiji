@@ -23,16 +23,16 @@ static void init_upper_half_mapping(EFI_MEMORY_DESCRIPTOR *mmap, UINTN mmap_size
 void boot_upper_half(EFI_BOOT_SERVICES *services, EFI_RUNTIME_SERVICES *vmapper, Elf64_Ehdr *kernhdr,
                      UINTN mapkey, struct bootstruct *bootinfo)
 {
+    services->ExitBootServices(services, mapkey);
+    init_upper_half_mapping(bootinfo->memmap, bootinfo->memmap_size);
+    vmapper->SetVirtualAddressMap(bootinfo->memmap_size, sizeof *bootinfo->memmap, EFI_MEMORY_DESCRIPTOR_VERSION,
+                                  bootinfo->memmap);
+
     EFI_PHYSICAL_ADDRESS pkernhdr = (EFI_PHYSICAL_ADDRESS)kernhdr + UPPER_HALF_BASE;
     kernhdr = (Elf64_Ehdr *)pkernhdr;
 
     EFI_PHYSICAL_ADDRESS pbootinfo = (EFI_PHYSICAL_ADDRESS)bootinfo + UPPER_HALF_BASE;
     bootinfo = (struct bootstruct *)pbootinfo;
-
-    services->ExitBootServices(services, mapkey);
-    init_upper_half_mapping(bootinfo->memmap, bootinfo->memmap_size);
-    vmapper->SetVirtualAddressMap(bootinfo->memmap_size, sizeof *bootinfo->memmap, EFI_MEMORY_DESCRIPTOR_VERSION,
-                                  bootinfo->memmap);
 
     start_fn local_start = (start_fn)(pkernhdr + kernhdr->e_entry); 
     funcall(local_start, bootinfo);
