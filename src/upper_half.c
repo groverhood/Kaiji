@@ -12,17 +12,32 @@
 #include <Uefi.h>
 #include <bootstruct.h>
 
-#define UPPER_HALF_BASE 0xffff800000000000
+#define UPPER_HALF_BASE 0xffff800000000000ul
 
 typedef void (*start_fn)(struct bootstruct *bootinfo);
 
-static void init_upper_half_mapping(EFI_MEMORY_DESCRIPTOR *mmap, UINTN mmap_size);
+extern EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout;
+
+static void init_upper_half_mapping(struct bootstruct *bootinfo);
+
+static void printn(UINTN n)
+{
+    if (n > 16) {
+        printn(n / 16);
+    }
+    UINTN mod = (n % 16);
+    UINT16 str[2] = { mod >= 10 ? ('a' + (mod - 10)) : '0' + mod, 0 };
+    cout->OutputString(cout, (UINT16 *)str);
+}
+
 
 void boot_upper_half(EFI_BOOT_SERVICES *services, EFI_RUNTIME_SERVICES *vmapper, Elf64_Ehdr *kernhdr,
                      UINTN mapkey, struct bootstruct *bootinfo)
 {
+    cout->OutputString(cout, u"\n\rInitializing upper half identity map... ");
+    init_upper_half_mapping(bootinfo);
+    cout->OutputString(cout, u"Upper half initialized!\n\rExiting boot services and setting virtual address map...\n\r");
     services->ExitBootServices(services, mapkey);
-    init_upper_half_mapping(bootinfo->memmap, bootinfo->memmap_size);
     vmapper->SetVirtualAddressMap(bootinfo->memmap_size, sizeof *bootinfo->memmap, EFI_MEMORY_DESCRIPTOR_VERSION,
                                   bootinfo->memmap);
 
@@ -32,17 +47,24 @@ void boot_upper_half(EFI_BOOT_SERVICES *services, EFI_RUNTIME_SERVICES *vmapper,
     EFI_PHYSICAL_ADDRESS pbootinfo = (EFI_PHYSICAL_ADDRESS)bootinfo + UPPER_HALF_BASE;
     bootinfo = (struct bootstruct *)pbootinfo;
 
-    start_fn local_start = (start_fn)(pkernhdr + kernhdr->e_entry); 
+    bootinfo->ramdisk = bootinfo->ramdisk + UPPER_HALF_BASE;
+
+    start_fn local_start = (start_fn)(pkernhdr + kernhdr->e_entry);
     funcall(local_start, bootinfo);
 }
 
-static void init_upper_half_mapping(EFI_MEMORY_DESCRIPTOR *mmap, UINTN mmap_size)
+static void init_upper_half_mapping(struct bootstruct *bootinfo)
 {
-    UINTN nents = (mmap_size / sizeof *mmap);
+    EFI_PHYSICAL_ADDRESS pmemmap = (EFI_PHYSICAL_ADDRESS)bootinfo->memmap;
     UINTN i;
-    for (i = 0; i < nents; ++i) {
-        if ((mmap[i].Type & EFI_MEMORY_RUNTIME) != 0) {
-            mmap[i].VirtualStart = mmap[i].PhysicalStart + UPPER_HALF_BASE;
-        }
+    for (i = 0; i < bootinfo->memmap_size; i += bootinfo->memmap_entsz) {
+        EFI_MEMORY_DESCRIPTOR *memdesc = (EFI_MEMORY_DESCRIPTOR *)(pmemmap + i);
+        memdesc->VirtualStart = memdesc->PhysicalStart + UPPER_HALF_BASE;
+        printn(pmemmap + i);
+        cout->OutputString(cout, u"\n\rMapping 0x");
+        printn(memdesc->PhysicalStart);
+        cout->OutputString(cout, u" -> 0x");
+        printn(memdesc->VirtualStart);
+        cout->OutputString(cout, u"\n\r");
     }
 }

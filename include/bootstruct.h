@@ -12,6 +12,7 @@ struct bootstruct {
     UINT64 ramdisk_size;
     UINT8 *ramdisk;
     UINT64 memmap_size;
+    UINT64 memmap_entsz;
     EFI_MEMORY_DESCRIPTOR memmap[0];
 };
 

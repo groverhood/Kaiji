@@ -36,7 +36,7 @@
 /* 16 kB region. */
 #define BOOTINFO_NPAGES 4
 
-static EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout;
+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout;
 
 static EFI_STATUS get_ramdisk_snp(EFI_HANDLE image, EFI_BOOT_SERVICES *services, UINTN *mapkey, struct bootstruct **bootinfo);
 static EFI_STATUS get_ramdisk_file(EFI_HANDLE image, EFI_BOOT_SERVICES *services, UINTN *mapkey, struct bootstruct **bootinfo);
@@ -66,7 +66,32 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
     }
 
     bootinfo->magic = KAIJIMAG;
-    return ramdisk_exec(cpu_driver, services, key, bootinfo);
+    return ramdisk_exec(cpu_driver, systab, key, bootinfo);
+}
+
+
+static void printn(UINTN n)
+{
+    if (n > 16) {
+        printn(n / 16);
+    }
+    UINTN mod = (n % 16);
+    UINT16 str[2] = { mod >= 10 ? ('a' + (mod - 10)) : '0' + mod, 0 };
+    cout->OutputString(cout, (UINT16 *)str);
+}
+
+static void print_addr(void *addr)
+{
+    UINTN n = (UINTN)addr;
+    cout->OutputString(cout, u"0x");
+    printn(n);
+    cout->OutputString(cout, u"\n\r");
+}
+
+static void print_and_int(UINT16 *message, UINTN n)
+{
+    cout->OutputString(cout, message);
+    print_addr((void *)n);
 }
 
 static EFI_STATUS get_memory_map(EFI_HANDLE image, EFI_BOOT_SERVICES *services, UINTN *mapkey, struct bootstruct **bootinfo)
@@ -84,13 +109,18 @@ static EFI_STATUS get_memory_map(EFI_HANDLE image, EFI_BOOT_SERVICES *services, 
     }
 
     (*bootinfo)->memmap_size = memmap_size;
+    print_addr((void *)memmap_size);
     status = services->GetMemoryMap(&(*bootinfo)->memmap_size, (*bootinfo)->memmap,
-                                    mapkey, NULL, NULL);
+                                    mapkey, &(*bootinfo)->memmap_entsz, NULL);
     if (status) {
         cout->OutputString(cout, u"Failed to get EFI memory map\n\r");
         return status;
     }
-    
+
+    print_and_int(u"memmap size:    ", (*bootinfo)->memmap_size);
+    print_and_int(u"memmap base:    ", (UINTN)(*bootinfo)->memmap);
+    print_and_int(u"memmap entsize: ", (*bootinfo)->memmap_entsz);
+
     return status;
 }
 
